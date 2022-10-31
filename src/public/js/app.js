@@ -5,7 +5,7 @@ const muteBtn = document.getElementById("mute");
 const cameraBtn = document.getElementById("camera");
 const cameraSelect = document.getElementById("cameras");
 const call = document.getElementById("call");
-const msg = call.querySelector("li");
+const msg = call.querySelector("ul");
 const msg_value = document.getElementById("a");
 const sendBtn = document.getElementById("b");
 
@@ -15,6 +15,40 @@ let cameraOff = false;
 let roomName;
 let myPeerConnection;
 let myDataChannel;
+
+//실시간 채팅
+const room = document.getElementById("myStream");
+
+function addMessage(message){
+    const ul = room.querySelector("ul");
+    const li = document.createElement("li");
+    li.innerText = message;
+    ul.appendChild(li);
+}
+
+function handleMessageSubmit(event){
+    event.preventDefault();
+    const input = room.querySelector("#chatForm input");
+    const value = input.value;
+    socket.emit("new_message", value, roomName, () => {
+        addMessage(`you: ${value}`);
+    });
+    input.value = "";
+}
+
+function handleNicknameSubmit(event){
+    event.preventDefault();
+    const input = room.querySelector("#nickname input");
+    const value = input.value;
+    socket.emit("nickname", value);
+    input.value = "";
+}
+
+const msgForm = room.querySelector("#chatForm");
+const nickForm = room.querySelector("#nickname");
+msgForm.addEventListener("submit", handleMessageSubmit);
+nickForm.addEventListener("submit", handleNicknameSubmit);
+
 
 async function getCameras(){
     try{
@@ -156,6 +190,10 @@ socket.on("ice", ice => {
     myPeerConnection.addIceCandidate(ice);
 });
 
+socket.on("new_message", (msg) => {
+    addMessage(msg);
+});
+
 // RTC Code
 
 function makeConnection(){
@@ -187,3 +225,8 @@ function handleAddStream(data){
     const peerFace = document.getElementById("peerFace");
     peerFace.srcObject = data.stream;
 }
+
+socket.on("bye", () => {
+    peerFace.srcObject = null;
+});
+
